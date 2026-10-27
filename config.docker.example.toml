@@ -1,0 +1,25 @@
+# Configuration pour le conteneur Docker. Copier en config.toml (non versionne) a cote de docker-compose.yml.
+# Les chemins pointent vers le volume /data du conteneur.
+
+[link]
+transport = "serial"       # "serial" : hote Linux uniquement (port transmis via devices) ; "tcp" : partout
+port = "/dev/ttyUSB0"      # chemin du port serie DANS le conteneur (voir devices dans docker-compose.yml)
+baudrate = 9600
+bytesize = 8
+parity = "N"
+stopbits = 1
+tcp_host = "0.0.0.0"
+tcp_port = 5100
+tcp_allowed_peer = ""      # mode tcp : IP de l'automate vue par le conteneur ; vide = toute machine (deconseille)
+
+[store]
+path = "/data/architect-bridge.db"
+retention_days = 90
+
+[api]
+host = "0.0.0.0"           # dans le conteneur ; l'exposition reelle est fixee par "ports" dans docker-compose.yml
+port = 8085
+api_key = ""               # OBLIGATOIRE : cle partagee avec Hopitalia (ARCHITECT_BRIDGE_API_KEY)
+
+[log]
+path = "/data/logs/bridge.log"

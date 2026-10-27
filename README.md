@@ -18,6 +18,9 @@ Documents de conception : [specification](docs/superpowers/specs/2026-10-27-arch
 
 ## Installation
 
+Quelle installation choisir selon le materiel du labo (Windows, Linux, Docker, convertisseur
+serie-Ethernet) : voir [docs/INSTALLATION.md](docs/INSTALLATION.md).
+
 Prerequis : Python 3.11 ou plus recent.
 
 ```bash
@@ -96,6 +99,44 @@ WantedBy=multi-user.target
 ```
 
 Puis `systemctl enable --now architect-bridge`.
+
+## Docker
+
+```bash
+cp config.docker.example.toml config.toml   # renseigner api_key, transport, port
+docker compose up -d --build
+docker compose logs -f architect-bridge
+```
+
+- La base SQLite et les logs sont dans le volume `bridge-data` (`/data` dans le conteneur) : ils
+  survivent aux redemarrages et aux mises a jour de l'image.
+- **Port serie : hote Linux uniquement.** Decommenter `devices` dans `docker-compose.yml`
+  (`/dev/ttyUSB0`) et garder `port = "/dev/ttyUSB0"` dans `config.toml`. Docker Desktop sous Windows
+  ne transmet pas les ports COM : sur un PC Windows relie en RS-232, utiliser l'installation en
+  service NSSM ci-dessus.
+- **Mode TCP** : `transport = "tcp"` et decommenter `"5100:5100"`. Renseigner `tcp_allowed_peer`
+  avec l'adresse vue par le conteneur (avec le reseau bridge de Docker, l'automate peut apparaitre
+  sous l'IP de la passerelle Docker : verifier dans les logs `[WARN] Connexion refusee depuis ...`).
+- **API** : publiee par defaut sur `127.0.0.1:8085` uniquement. Si Hopitalia tourne sur un autre
+  serveur, remplacer par l'IP LAN (`"192.168.x.y:8085:8085"`).
+- **Hopitalia dans Docker sur la meme machine** : `127.0.0.1` designe alors le conteneur Hopitalia
+  lui-meme. Mettre les deux conteneurs sur le meme reseau Docker et utiliser
+  `ARCHITECT_BRIDGE_URL=http://architect-bridge:8085` :
+
+  ```yaml
+  # docker-compose.yml du bridge
+  services:
+    architect-bridge:
+      networks: [hopitalia]
+  networks:
+    hopitalia:
+      external: true
+      name: <reseau du compose Hopitalia>   # voir `docker network ls`
+  ```
+
+Test sans automate : `transport = "tcp"`, port 5100 publie, puis depuis l'hote
+`python -m simulator.architect_sim --port 5100` et
+`curl -H "X-API-Key: <cle>" http://127.0.0.1:8085/results`.
 
 ## API REST
 
