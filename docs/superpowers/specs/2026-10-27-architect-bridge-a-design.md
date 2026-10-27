@@ -62,7 +62,7 @@ Arborescence :
 ```
 architect-bridge/
   bridge/
-    transport/serial.py, transport/tcp.py
+    transport/serial_port.py, transport/tcp.py
     datalink.py
     codec.py
     drivers/architect.py
@@ -106,7 +106,7 @@ checksum, le numero de trame et l'ecriture du journal brut la conditionnent.
 |---|---|---|
 | id | INTEGER PK AUTOINCREMENT | |
 | received_at | TEXT (ISO 8601 UTC) | |
-| text | TEXT | Message complet H...L, enregistrements separes par CR |
+| text | TEXT | Message complet H...L, enregistrements separes par CR, champs P.6/P.8/P.9 vides |
 | status | TEXT | `received`, `parsed`, `parse_error` |
 | error | TEXT NULL | Message d'erreur d'interpretation |
 
@@ -134,8 +134,9 @@ checksum, le numero de trame et l'ecriture du journal brut la conditionnent.
 | priority | O.6 | `S` ou `R` |
 | comments | C.4 | Tableau JSON des commentaires qui suivent R (ou O pour une exception) |
 
-Pour une exception (sans enregistrement R), `uid` utilise `result_type = X` et
-`completed_at` = date/heure de l'en-tete H (H.14).
+Pour une exception (sans enregistrement R), `uid` utilise `result_type = X`,
+`completed_at` = date/heure de l'en-tete H (H.14), et se termine par `|<O.2>` (numero de
+sequence de l'enregistrement O) pour distinguer les repetitions d'un meme test.
 
 Insertion : `INSERT ... ON CONFLICT(uid) DO NOTHING` (idempotent, y compris au rejeu).
 
@@ -144,7 +145,8 @@ Une ligne : `acked_seq INTEGER`.
 
 ### Donnees personnelles
 Le nom, la date de naissance et le sexe du patient (P.6, P.8, P.9) ne sont pas
-stockes. Spring rattache le resultat au patient via le SID.
+stockes : ils sont vides du texte avant l'ecriture dans `raw_messages` (journal "brut
+sauf identite"). Spring rattache le resultat au patient via le SID.
 
 ### Purge
 Tache quotidienne : supprimer les `results` avec `seq <= acked_seq` et plus anciens que
@@ -210,7 +212,9 @@ Securite :
 | Timeout reception entre trames | 30 s -> abandon du message, retour au repos |
 | Contention | en A le service n'emet jamais ENQ ; pas de contention |
 | Encodage | cp850 |
-| TCP | le service ecoute (mode serveur) sur hote/port configures ; l'automate (ou le simulateur) se connecte |
+| TCP | le service ecoute (mode serveur) sur hote/port configures ; l'automate (ou le simulateur) se connecte. `tcp_allowed_peer` (IP de l'automate) refuse toute autre machine. Une nouvelle connexion entrante remplace une connexion devenue muette ; SO_KEEPALIVE active |
+| ENQ en cours de session | message en cours remis comme a l'EOT, ACK, nouvelle session |
+| Timer de session | relance a chaque reponse ACK/NAK ; le bruit sur la ligne ne le prolonge pas |
 
 ## 8. Gestion des erreurs
 
@@ -221,7 +225,8 @@ Securite :
 | Port absent / deconnecte | Nouvelle tentative toutes les 5 s ; `/health.connected = false` |
 | Echec d'interpretation | `parse_error` + compteur ; message rejouable |
 | Resultat en double | Ignore via `uid` |
-| Echec d'ecriture SQLite du message brut | NAK sur la trame finale ; log ERREUR ; remonte dans `/health` |
+| Echec d'ecriture SQLite du message brut | NAK sur la trame finale ; log ERREUR ; `/health.error` renseigne |
+| Echec de la purge | log ERREUR ; la liaison n'est pas interrompue |
 
 Logs : `logging` + `RotatingFileHandler`, prefixes `[INFO]`, `[WARN]`, `[ERREUR]`, sans
 emoji.

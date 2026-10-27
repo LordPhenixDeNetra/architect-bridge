@@ -1,0 +1,25 @@
+# Copier ce fichier en config.toml et l'adapter. config.toml n'est pas versionne.
+
+[link]
+# "serial" (RS-232, cas standard de l'ARCHITECT) ou "tcp" (le service ecoute, l'automate se connecte)
+transport = "serial"
+port = "COM5"          # port COM du PC relie au connecteur P3 de l'ARCHITECT
+baudrate = 9600        # doit correspondre a System > Configuration > Serial ports sur l'automate
+bytesize = 8
+parity = "N"           # N, E ou O
+stopbits = 1
+tcp_host = "0.0.0.0"   # mode tcp uniquement : interface d'ecoute pour l'automate
+tcp_port = 5100
+tcp_allowed_peer = ""  # mode tcp : adresse IP de l'automate ; vide = toute machine (deconseille)
+
+[store]
+path = "architect-bridge.db"
+retention_days = 90    # purge des resultats acquittes par Spring apres ce delai
+
+[api]
+host = "127.0.0.1"     # mettre l'adresse LAN du PC si Hopitalia tourne sur une autre machine
+port = 8085
+api_key = ""           # OBLIGATOIRE : cle partagee avec Hopitalia (en-tete X-API-Key)
+
+[log]
+path = "logs/bridge.log"
