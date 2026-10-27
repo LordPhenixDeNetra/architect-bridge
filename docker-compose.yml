@@ -1,0 +1,21 @@
+services:
+  architect-bridge:
+    build: .
+    image: architect-bridge:latest
+    container_name: architect-bridge
+    restart: unless-stopped
+    volumes:
+      - ./config.toml:/config/config.toml:ro
+      - bridge-data:/data              # base SQLite (journal brut + resultats) et logs
+    ports:
+      # API : n'exposer que sur l'interface utile. Hopitalia sur la meme machine -> 127.0.0.1 ;
+      # sinon remplacer par l'IP LAN du serveur (ex. "192.168.1.20:8085:8085"). Jamais 0.0.0.0.
+      - "127.0.0.1:8085:8085"
+      # Mode tcp uniquement : port sur lequel l'automate se connecte.
+      # - "5100:5100"
+    # Mode serial (hote Linux) : transmettre le port de l'adaptateur USB-serie.
+    # devices:
+    #   - /dev/ttyUSB0:/dev/ttyUSB0
+
+volumes:
+  bridge-data:
