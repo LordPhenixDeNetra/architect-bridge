@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Donnees et config locales
+*.db
+*.db-wal
+*.db-shm
+config.toml
+logs/
+*.log
+
+# Documents proprietaires (manuels Abbott)
+*.pdf
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
