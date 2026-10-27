@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "architect-bridge"
+version = "0.1.0"
+description = "Passerelle ASTM pour l'automate Abbott ARCHITECT, avec API REST"
+requires-python = ">=3.11"
+dependencies = ["fastapi", "uvicorn", "pyserial"]
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx"]
+
+[project.scripts]
+architect-bridge = "bridge.main:main"
+
+[tool.setuptools.packages.find]
+include = ["bridge*", "simulator*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
